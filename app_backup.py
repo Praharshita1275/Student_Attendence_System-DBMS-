@@ -35,13 +35,9 @@ def init_db():
 
 # Helper function to get database connection
 def get_db_connection():
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        conn.row_factory = sqlite3.Row
-        return conn
-    except sqlite3.Error as e:
-        print(f"Database connection error: {str(e)}")
-        raise
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 # Route for home page
 @app.route('/')
@@ -51,63 +47,42 @@ def index():
 # Routes for student management
 @app.route('/students')
 def list_students():
-    try:
-        conn = get_db_connection()
-        students = conn.execute('SELECT * FROM Students').fetchall()
-        return render_template('students/list.html', students=students)
-    except sqlite3.Error as e:
-        flash('Error retrieving student list. Please try again.')
-        return redirect(url_for('index'))
-    finally:
-        if 'conn' in locals():
-            conn.close()
+    conn = get_db_connection()
+    students = conn.execute('SELECT * FROM Students').fetchall()
+    conn.close()
+    return render_template('students/list.html', students=students)
 
 @app.route('/students/add', methods=['GET', 'POST'])
 def add_student():
     if request.method == 'POST':
-        try:
-            first_name = request.form['first_name']
-            last_name = request.form['last_name']
-            email = request.form['email']
-            phone = request.form['phone']
-            enrollment_date = request.form['enrollment_date']
-            
-            conn = get_db_connection()
-            conn.execute('INSERT INTO Students (first_name, last_name, email, phone, enrollment_date) VALUES (?, ?, ?, ?, ?)',
-                        (first_name, last_name, email, phone, enrollment_date))
-            conn.commit()
-            flash('Student added successfully!')
-            return redirect(url_for('list_students'))
-        except sqlite3.IntegrityError:
-            flash('Error: A student with this email already exists.')
-            return redirect(url_for('add_student'))
-        except sqlite3.Error as e:
-            conn.rollback()
-            flash('Error adding student. Please try again.')
-            return redirect(url_for('add_student'))
-        finally:
-            if 'conn' in locals():
-                conn.close()
+        first_name = request.form['first_name']
+        last_name = request.form['last_name']
+        email = request.form['email']
+        phone = request.form['phone']
+        enrollment_date = request.form['enrollment_date']
+        
+        conn = get_db_connection()
+        conn.execute('INSERT INTO Students (first_name, last_name, email, phone, enrollment_date) VALUES (?, ?, ?, ?, ?)',
+                    (first_name, last_name, email, phone, enrollment_date))
+        conn.commit()
+        conn.close()
+        
+        flash('Student added successfully!')
+        return redirect(url_for('list_students'))
     
     return render_template('students/add.html')
 
 # Routes for course management
 @app.route('/courses')
 def list_courses():
-    try:
-        conn = get_db_connection()
-        courses = conn.execute('''
-            SELECT c.*, i.first_name || ' ' || i.last_name as instructor_name 
-            FROM Courses c
-            JOIN Instructors i ON c.instructor_id = i.instructor_id
-        ''').fetchall()
-        return render_template('courses/list.html', courses=courses)
-    except sqlite3.Error as e:
-        flash('Error retrieving course list. Please try again.')
-        return redirect(url_for('index'))
-    finally:
-        if 'conn' in locals():
-            conn.close()
+    conn = get_db_connection()
+    courses = conn.execute('''
+        SELECT c.*, i.first_name || ' ' || i.last_name as instructor_name 
+        FROM Courses c
+        JOIN Instructors i ON c.instructor_id = i.instructor_id
+    ''').fetchall()
+    conn.close()
+    return render_template('courses/list.html', courses=courses)
 
 # Routes for attendance management
 @app.route('/attendance')
@@ -193,46 +168,38 @@ def take_attendance():
 @app.route('/attendance/stats', methods=['GET'])
 def attendance_stats():
     """Generate attendance statistics for courses or students"""
-    try:
-        conn = get_db_connection()
-        stats_type = request.args.get('type', 'course')
-        
-        if stats_type == 'course':
-            # Course attendance statistics
-            stats = conn.execute('''
-                SELECT c.course_id, c.course_code, c.course_name,
-                       COUNT(DISTINCT a.student_id) as total_students,
-                       SUM(CASE WHEN a.status = 'Present' THEN 1 ELSE 0 END) as present_count,
-                       ROUND(100.0 * SUM(CASE WHEN a.status = 'Present' THEN 1 ELSE 0 END) / 
-                             COUNT(*), 2) as attendance_percentage
-                FROM Attendance_Records a
-                JOIN Courses c ON a.course_id = c.course_id
-                GROUP BY c.course_id
-                ORDER BY attendance_percentage DESC
-            ''').fetchall()
-        else:
-            # Student attendance statistics
-            stats = conn.execute('''
-                SELECT s.student_id, s.first_name, s.last_name,
-                       COUNT(DISTINCT a.course_id) as total_courses,
-                       SUM(CASE WHEN a.status = 'Present' THEN 1 ELSE 0 END) as present_count,
-                       ROUND(100.0 * SUM(CASE WHEN a.status = 'Present' THEN 1 ELSE 0 END) / 
-                             COUNT(*), 2) as attendance_percentage
-                FROM Attendance_Records a
-                JOIN Students s ON a.student_id = s.student_id
-                GROUP BY s.student_id
-                ORDER BY attendance_percentage DESC
-            ''').fetchall()
-        
-        return render_template('attendance/stats.html', stats=stats, stats_type=stats_type)
+    conn = get_db_connection()
+    stats_type = request.args.get('type', 'course')
     
-    except sqlite3.Error as e:
-        flash('Error generating attendance statistics. Please try again.')
-        return redirect(url_for('index'))
+    if stats_type == 'course':
+        # Course attendance statistics
+        stats = conn.execute('''
+            SELECT c.course_id, c.course_code, c.course_name,
+                   COUNT(DISTINCT a.student_id) as total_students,
+                   SUM(CASE WHEN a.status = 'Present' THEN 1 ELSE 0 END) as present_count,
+                   ROUND(100.0 * SUM(CASE WHEN a.status = 'Present' THEN 1 ELSE 0 END) / 
+                         COUNT(*), 2) as attendance_percentage
+            FROM Attendance_Records a
+            JOIN Courses c ON a.course_id = c.course_id
+            GROUP BY c.course_id
+            ORDER BY attendance_percentage DESC
+        ''').fetchall()
+    else:
+        # Student attendance statistics
+        stats = conn.execute('''
+            SELECT s.student_id, s.first_name, s.last_name,
+                   COUNT(DISTINCT a.course_id) as total_courses,
+                   SUM(CASE WHEN a.status = 'Present' THEN 1 ELSE 0 END) as present_count,
+                   ROUND(100.0 * SUM(CASE WHEN a.status = 'Present' THEN 1 ELSE 0 END) / 
+                         COUNT(*), 2) as attendance_percentage
+            FROM Attendance_Records a
+            JOIN Students s ON a.student_id = s.student_id
+            GROUP BY s.student_id
+            ORDER BY attendance_percentage DESC
+        ''').fetchall()
     
-    finally:
-        if 'conn' in locals():
-            conn.close()
+    conn.close()
+    return render_template('attendance/stats.html', stats=stats, stats_type=stats_type)
 
 @app.route('/attendance/export', methods=['GET'])
 def export_attendance():
