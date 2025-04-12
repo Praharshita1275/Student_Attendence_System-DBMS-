@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Attendance Report - Attendance System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        <header class="my-4">
+            <h1>Course Attendance Report</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('attendance_menu') }}">Attendance</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('attendance_report') }}">Reports</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Course Report</li>
+                </ol>
+            </nav>
+        </header>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Course Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Course Code:</strong> {{ course['course_code'] }}</p>
+                        <p><strong>Course Name:</strong> {{ course['course_name'] }}</p>
+                        <p><strong>Semester:</strong> {{ course['semester'] }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Start Date:</strong> {{ course['start_date'] }}</p>
+                        <p><strong>End Date:</strong> {{ course['end_date'] }}</p>
+                        {% if selected_date %}
+                        <p><strong>Selected Date:</strong> {{ selected_date }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5>Attendance Records</h5>
+            </div>
+            <div class="card-body">
+                {% set dates = [] %}
+                {% set students = {} %}
+                
+                {% for record in attendance_data %}
+                    {% if record['date'] not in dates %}
+                        {% set _ = dates.append(record['date']) %}
+                    {% endif %}
+                    
+                    {% if record['student_id'] not in students %}
+                        {% set _ = students.update({record['student_id']: {'name': record['student_name'], 'records': {}}}) %}
+                    {% endif %}
+                    
+                    {% set _ = students[record['student_id']]['records'].update({record['date']: record['status']}) %}
+                {% endfor %}
+                
+                {% if selected_date %}
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Status</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in attendance_data %}
+                            <tr>
+                                <td>{{ record['student_name'] }}</td>
+                                <td>
+                                    {% if record['status'] == 'Present' %}
+                                    <span class="badge bg-success">Present</span>
+                                    {% elif record['status'] == 'Absent' %}
+                                    <span class="badge bg-danger">Absent</span>
+                                    {% elif record['status'] == 'Late' %}
+                                    <span class="badge bg-warning text-dark">Late</span>
+                                    {% elif record['status'] == 'Excused' %}
+                                    <span class="badge bg-info text-dark">Excused</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ record['remarks'] }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <div class="table-responsive">
+                        <table class="table table-hover table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    {% for date in dates|sort %}
+                                    <th>{{ date }}</th>
+                                    {% endfor %}
+                                    <th>Attendance %</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student_id, student_data in students.items() %}
+                                <tr>
+                                    <td>{{ student_data['name'] }}</td>
+                                    {% set present_count = {'count': 0} %}
+                                    {% for date in dates|sort %}
+                                        <td>
+                                            {% if date in student_data['records'] %}
+                                                {% if student_data['records'][date] == 'Present' %}
+                                                    <span class="badge bg-success">P</span>
+                                                    {% set _ = present_count.update({'count': present_count['count'] + 1}) %}
+                                                {% elif student_data['records'][date] == 'Absent' %}
+                                                    <span class="badge bg-danger">A</span>
+                                                {% elif student_data['records'][date] == 'Late' %}
+                                                    <span class="badge bg-warning text-dark">L</span>
+                                                {% elif student_data['records'][date] == 'Excused' %}
+                                                    <span class="badge bg-info text-dark">E</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span>-</span>
+                                            {% endif %}
+                                        </td>
+                                    {% endfor %}
+                                    <td>
+                                        {% set total_days = dates|length %}
+                                        {% if total_days > 0 %}
+                                            {{ (present_count['count'] / total_days * 100)|round(2) }}%
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="card-footer">
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <a href="{{ url_for('attendance_report') }}" class="btn btn-primary">Back to Reports</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Reports - Attendance System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        <header class="my-4">
+            <h1>Attendance Reports</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('attendance_menu') }}">Attendance</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Reports</li>
+                </ol>
+            </nav>
+        </header>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5>Select Report Type</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    <div class="mb-3">
+                        <label for="report_type" class="form-label">Report Type</label>
+                        <select class="form-select" id="report_type" name="report_type" required onchange="toggleReportOptions()">
+                            <option value="">-- Select Report Type --</option>
+                            <option value="student">Student Report</option>
+                            <option value="course">Course Report</option>
+                        </select>
+                    </div>
+                    
+                    <div id="student_options" style="display: none;">
+                        <div class="mb-3">
+                            <label for="student_id" class="form-label">Select Student</label>
+                            <select class="form-select" id="student_id" name="student_id">
+                                <option value="">-- Select Student --</option>
+                                {% for student in students %}
+                                <option value="{{ student['student_id'] }}">{{ student['first_name'] }} {{ student['last_name'] }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div id="course_options" style="display: none;">
+                        <div class="mb-3">
+                            <label for="course_id" class="form-label">Select Course</label>
+                            <select class="form-select" id="course_id" name="course_id">
+                                <option value="">-- Select Course --</option>
+                                {% for course in courses %}
+                                <option value="{{ course['course_id'] }}">{{ course['course_code'] }} - {{ course['course_name'] }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="date" class="form-label">Date (Optional - leave blank for all dates)</label>
+                            <input type="date" class="form-control" id="date" name="date">
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('attendance_menu') }}" class="btn btn-secondary me-md-2">Cancel</a>
+                        <button type="submit" class="btn btn-primary">Generate Report</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function toggleReportOptions() {
+            const reportType = document.getElementById('report_type').value;
+            document.getElementById('student_options').style.display = reportType === 'student' ? 'block' : 'none';
+            document.getElementById('course_options').style.display = reportType === 'course' ? 'block' : 'none';
+        }
+    </script>
+</body>
+</html>

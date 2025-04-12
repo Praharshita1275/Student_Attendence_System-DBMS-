@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Attendance Report - Attendance System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"> <!-- Adjust this path as needed -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+<div class="container">
+    <header class="my-4">
+        <h1>Student Attendance Report</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('attendance_menu') }}">Attendance</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('attendance_report') }}">Reports</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Student Report</li>
+            </ol>
+        </nav>
+    </header>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>Student Information</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Name:</strong> {{ student['first_name']|default('N/A') }} {{ student['last_name']|default('N/A') }}</p>
+                    <p><strong>Email:</strong> {{ student['email']|default('N/A') }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Phone:</strong> {{ student['phone']|default('N/A') }}</p>
+                    <p><strong>Enrollment Date:</strong> {{ student['enrollment_date']|default('N/A') }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5>Attendance Records</h5>
+        </div>
+        <div class="card-body">
+            {% set total_present = 0 %}
+            {% set total_records = 0 %}
+
+            <table class="table table-hover">
+                <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Course</th>
+                    <th>Status</th>
+                    <th>Remarks</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for record in attendance_data %}
+                    {% set total_records = total_records + 1 %}
+                    {% if record['status'] == 'Present' %}
+                        {% set total_present = total_present + 1 %}
+                    {% endif %}
+                    <tr>
+                        <td>{{ record['date']|default('N/A') }}</td>
+                        <td>{{ record['course_code']|default('N/A') }} - {{ record['course_name']|default('N/A') }}</td>
+                        <td>
+                            {% if record['status'] == 'Present' %}
+                                <span class="badge bg-success">Present</span>
+                            {% elif record['status'] == 'Absent' %}
+                                <span class="badge bg-danger">Absent</span>
+                            {% elif record['status'] == 'Late' %}
+                                <span class="badge bg-warning text-dark">Late</span>
+                            {% elif record['status'] == 'Excused' %}
+                                <span class="badge bg-info text-dark">Excused</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Unknown</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ record['remarks']|default('N/A') }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+
+            {% if total_records > 0 %}
+            {% set attendance_percentage = ((total_present / total_records) * 100)|round(2) %}
+            <div class="mt-4">
+                <h5>Attendance Summary</h5>
+                <p><strong>Total Classes:</strong> {{ total_records }}</p>
+                <p><strong>Present:</strong> {{ total_present }} ({{ attendance_percentage }}%)</p>
+                <div class="progress">
+                    <div 
+                        class="progress-bar" 
+                        style="--attendance-width: {{ attendance_percentage }}%;" 
+                        role="progressbar" 
+                        aria-valuenow="{{ attendance_percentage }}" 
+                        aria-valuemin="0" 
+                        aria-valuemax="100">
+                        {{ attendance_percentage }}%
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Take Attendance - Attendance System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        <header class="my-4">
+            <h1>Take Attendance</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('attendance_menu') }}">Attendance</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Take Attendance</li>
+                </ol>
+            </nav>
+        </header>
+        
+        <div class="card mb-4">
+            <div class="card-body">
+                <form id="courseSelectionForm" method="get">
+                    <div class="row">
+                        <div class="col-md-5 mb-3">
+                            <label for="course_id" class="form-label">Select Course</label>
+                            <select class="form-select" id="course_id" name="course_id" required>
+                                <option value="">-- Select Course --</option>
+                                {% for course in courses %}
+                                <option value="{{ course['course_id'] }}">{{ course['course_code'] }} - {{ course['course_name'] }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="date" class="form-label">Date</label>
+                            <input type="date" class="form-control" id="date" name="date" value="{{ today }}" required>
+                        </div>
+                        
+                        <div class="col-md-3 mb-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">Load Students</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        {% if request.args.get('course_id') %}
+        <form method="post">
+            <input type="hidden" name="course_id" value="{{ request.args.get('course_id') }}">
+            <input type="hidden" name="date" value="{{ request.args.get('date', today) }}">
+            
+            <div class="mb-3">
+                <label for="instructor_id" class="form-label">Recorded By</label>
+                <select class="form-select" id="instructor_id" name="instructor_id" required>
+                    <option value="">-- Select Instructor --</option>
+                    {% for instructor in instructors %}
+                    <option value="{{ instructor['instructor_id'] }}">{{ instructor['first_name'] }} {{ instructor['last_name'] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5>Students Enrolled in 
+                    {% for course in courses %}
+                        {% if course['course_id']|string == request.args.get('course_id') %}
+                            {{ course['course_code'] }} - {{ course['course_name'] }}
+                        {% endif %}
+                    {% endfor %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Student Name</th>
+                                <th>Status</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if get_db_connection and request.args.get('course_id') %}
+                                {% set conn = get_db_connection() %}
+                                {% set students = conn.execute('SELECT s.* FROM Students s JOIN Enrollments e ON s.student_id = e.student_id WHERE e.course_id = ? AND e.status = "Active" ORDER BY s.last_name, s.first_name', (request.args.get("course_id"),)).fetchall() %}
+                                {% for student in students %}
+                                    {% set record = conn.execute('SELECT * FROM Attendance_Records WHERE student_id = ? AND course_id = ? AND date = ?', (student["student_id"], request.args.get("course_id"), request.args.get("date", today))).fetchone() %}
+                                    <tr>
+                                        <td>{{ student['first_name'] }} {{ student['last_name'] }}</td>
+                                        <td>
+                                            <select class="form-select" name="status_{{ student['student_id'] }}" required>
+                                                <option value="Present" {% if record and record['status'] == 'Present' %}selected{% endif %}>Present</option>
+                                                <option value="Absent" {% if record and record['status'] == 'Absent' %}selected{% endif %}>Absent</option>
+                                                <option value="Late" {% if record and record['status'] == 'Late' %}selected{% endif %}>Late</option>
+                                                <option value="Excused" {% if record and record['status'] == 'Excused' %}selected{% endif %}>Excused</option>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <input type="text" class="form-control" name="remarks_{{ student['student_id'] }}" placeholder="Optional remarks" value="{{ record['remarks'] if record and record['remarks'] else '' }}">
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                                {% if conn %}
+                                    {% set _ = conn.close() %}
+                                {% endif %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="3" class="text-center">Select a course to load students</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card-footer">
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('attendance_menu') }}" class="btn btn-secondary me-md-2">Cancel</a>
+                        <button type="submit" class="btn btn-primary">Save Attendance</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+        {% endif %}
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

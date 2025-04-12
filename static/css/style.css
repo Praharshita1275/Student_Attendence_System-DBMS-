@@ -1,0 +1,61 @@
+body {
+    background-color: #FDFCFB;
+    color: #333333;
+    padding-bottom: 2rem;
+    font-family: 'Poppins', sans-serif;
+  }
+  
+  .container {
+    max-width: 1200px;
+  }
+  
+  header {
+    border-bottom: 1px solid #DCDCDC;
+    padding-bottom: 1rem;
+    margin-bottom: 2rem;
+  }
+  
+  .card {
+    background-color: #FFFFFF;
+    box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.08);
+    margin-bottom: 1.5rem;
+    border-radius: 12px;
+    padding: 1rem;
+  }
+  
+  .table th {
+    background-color: #F3F4F6;
+    font-weight: 600;
+  }
+  
+  .form-label {
+    font-weight: 500;
+    color: #333333;
+  }
+  
+  .breadcrumb {
+    margin-top: 0.5rem;
+    color: #6C757D;
+    font-size: 0.95rem;
+  }
+  
+  .badge {
+    font-size: 0.85rem;
+    background-color: #FFE5B4;
+    color: #333333;
+    border-radius: 5px;
+    padding: 0.25rem 0.5rem;
+  }
+  
+  /* ✅ Progress bar styling */
+  .progress-bar {
+    background-color: #00C897;
+    height: 24px;
+    border-radius: 6px;
+    color: #FFFFFF;
+    text-align: center;
+    line-height: 24px;
+    width: var(--attendance-width);
+    transition: width 0.4s ease;
+  }
+  
