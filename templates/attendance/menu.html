@@ -1,55 +1,113 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Attendance Management - Attendance System</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
-</head>
-<body>
-    <div class="container">
-        <header class="my-4">
-            <h1>Attendance Management</h1>
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="mb-3">
+                <i class="bi bi-check2-square me-2"></i>
+                Attendance Management
+            </h2>
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Attendance</li>
+                    <li class="breadcrumb-item active">Attendance</li>
                 </ol>
             </nav>
-        </header>
-        
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="alert alert-success">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-        
-        <div class="row mt-4">
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-body text-center">
-                        <h3>Take Attendance</h3>
-                        <p>Record attendance for a class session</p>
-                        <a href="{{ url_for('take_attendance') }}" class="btn btn-primary">Take Attendance</a>
-                    </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-calendar-plus display-4 mb-3 text-primary"></i>
+                    <h3 class="card-title">Take Attendance</h3>
+                    <p class="text-muted mb-4">Record daily attendance for courses</p>
+                    <a href="{{ url_for('take_attendance') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-2"></i>Record Attendance
+                    </a>
                 </div>
             </div>
-            
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-body text-center">
-                        <h3>View Reports</h3>
-                        <p>Generate attendance reports</p>
-                        <a href="{{ url_for('attendance_report') }}" class="btn btn-primary">View Reports</a>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-graph-up display-4 mb-3 text-primary"></i>
+                    <h3 class="card-title">View Statistics</h3>
+                    <p class="text-muted mb-4">Analyze attendance patterns and trends</p>
+                    <a href="{{ url_for('attendance_stats') }}" class="btn btn-primary">
+                        <i class="bi bi-bar-chart me-2"></i>View Stats
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-file-earmark-text display-4 mb-3 text-primary"></i>
+                    <h3 class="card-title">Generate Reports</h3>
+                    <p class="text-muted mb-4">Create and export attendance reports</p>
+                    <a href="{{ url_for('attendance_report') }}" class="btn btn-primary">
+                        <i class="bi bi-download me-2"></i>Generate Report
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title mb-4">Recent Attendance Records</h4>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Course</th>
+                                    <th>Present</th>
+                                    <th>Absent</th>
+                                    <th>Attendance Rate</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in recent_records %}
+                                <tr>
+                                    <td>{{ record.date }}</td>
+                                    <td>{{ record.course_name }}</td>
+                                    <td>{{ record.present_count }}</td>
+                                    <td>{{ record.absent_count }}</td>
+                                    <td>
+                                        <div class="progress">
+                                            <div class="progress-bar bg-success" 
+                                                 role="progressbar" 
+                                                 style="width: {{ record.attendance_rate }}%"
+                                                 aria-valuenow="{{ record.attendance_rate }}" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100">
+                                                {{ record.attendance_rate }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('view_attendance_detail', date=record.date, course_id=record.course_id) }}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i> View
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+</div>
+{% endblock %}

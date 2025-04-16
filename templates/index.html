@@ -1,59 +1,85 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Attendance System</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
-</head>
-<body>
-    <div class="container">
-        <header class="my-4">
-            <h1 class="text-center">Student Attendance Tracking System</h1>
-        </header>
-        
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="alert alert-success">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-        
-        <div class="row mt-5">
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body text-center">
-                        <h3>Student Management</h3>
-                        <p>Add, view, and manage student records</p>
-                        <a href="{{ url_for('list_students') }}" class="btn btn-primary">Go to Students</a>
-                    </div>
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-people display-4 mb-3 text-primary"></i>
+                    <h3 class="card-title">Student Management</h3>
+                    <p class="text-muted mb-4">Add, view, and manage student records with ease</p>
+                    <a href="{{ url_for('list_students') }}" class="btn btn-primary">
+                        <i class="bi bi-arrow-right-circle me-2"></i>Go to Students
+                    </a>
                 </div>
             </div>
-            
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body text-center">
-                        <h3>Course Management</h3>
-                        <p>View and manage course information</p>
-                        <a href="{{ url_for('list_courses') }}" class="btn btn-primary">Go to Courses</a>
-                    </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-book display-4 mb-3 text-primary"></i>
+                    <h3 class="card-title">Course Management</h3>
+                    <p class="text-muted mb-4">Organize and manage course information efficiently</p>
+                    <a href="{{ url_for('list_courses') }}" class="btn btn-primary">
+                        <i class="bi bi-arrow-right-circle me-2"></i>Go to Courses
+                    </a>
                 </div>
             </div>
-            
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body text-center">
-                        <h3>Attendance</h3>
-                        <p>Take attendance and view reports</p>
-                        <a href="{{ url_for('attendance_menu') }}" class="btn btn-primary">Go to Attendance</a>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-check2-square display-4 mb-3 text-primary"></i>
+                    <h3 class="card-title">Attendance</h3>
+                    <p class="text-muted mb-4">Track attendance and generate detailed reports</p>
+                    <a href="{{ url_for('attendance_menu') }}" class="btn btn-primary">
+                        <i class="bi bi-arrow-right-circle me-2"></i>Go to Attendance
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card stats-card">
+                <div class="card-body">
+                    <h4 class="text-white mb-4">Quick Statistics</h4>
+                    <div class="row g-4">
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-people-fill display-6 me-3"></i>
+                                <div>
+                                    <h6 class="mb-0">Total Students</h6>
+                                    <h3 class="mb-0">{{ total_students if total_students else 0 }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-book-fill display-6 me-3"></i>
+                                <div>
+                                    <h6 class="mb-0">Active Courses</h6>
+                                    <h3 class="mb-0">{{ active_courses if active_courses else 0 }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-calendar-check-fill display-6 me-3"></i>
+                                <div>
+                                    <h6 class="mb-0">Today's Attendance</h6>
+                                    <h3 class="mb-0">{{ today_attendance if today_attendance else '0%' }}</h3>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+</div>
+{% endblock %}

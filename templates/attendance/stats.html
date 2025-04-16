@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="mb-3">
+                <i class="bi bi-graph-up me-2"></i>
+                Attendance Statistics
+            </h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('attendance_menu') }}">Attendance</a></li>
+                    <li class="breadcrumb-item active">Statistics</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h4 class="card-title mb-0">
+                            {% if stats_type == 'course' %}
+                                Course Attendance Statistics
+                            {% else %}
+                                Student Attendance Statistics
+                            {% endif %}
+                        </h4>
+                        <div class="btn-group">
+                            <a href="{{ url_for('attendance_stats', type='course') }}" 
+                               class="btn btn-outline-primary {% if stats_type == 'course' %}active{% endif %}">
+                                <i class="bi bi-book me-1"></i>Courses
+                            </a>
+                            <a href="{{ url_for('attendance_stats', type='student') }}" 
+                               class="btn btn-outline-primary {% if stats_type == 'student' %}active{% endif %}">
+                                <i class="bi bi-people me-1"></i>Students
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    {% if stats_type == 'course' %}
+                                        <th>Course Code</th>
+                                        <th>Course Name</th>
+                                        <th>Total Students</th>
+                                        <th>Present Count</th>
+                                        <th>Attendance Rate</th>
+                                    {% else %}
+                                        <th>Student Name</th>
+                                        <th>Total Courses</th>
+                                        <th>Present Count</th>
+                                        <th>Attendance Rate</th>
+                                    {% endif %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stat in stats %}
+                                <tr>
+                                    {% if stats_type == 'course' %}
+                                        <td>{{ stat.course_code }}</td>
+                                        <td>{{ stat.course_name }}</td>
+                                        <td>{{ stat.total_students }}</td>
+                                        <td>{{ stat.present_count }}</td>
+                                        <td>
+                                            <div class="progress">
+                                                <div class="progress-bar bg-success" 
+                                                     role="progressbar" 
+                                                     style="width: {{ stat.attendance_percentage }}%"
+                                                     aria-valuenow="{{ stat.attendance_percentage }}" 
+                                                     aria-valuemin="0" 
+                                                     aria-valuemax="100">
+                                                    {{ "%.1f"|format(stat.attendance_percentage) }}%
+                                                </div>
+                                            </div>
+                                        </td>
+                                    {% else %}
+                                        <td>{{ stat.first_name }} {{ stat.last_name }}</td>
+                                        <td>{{ stat.total_courses }}</td>
+                                        <td>{{ stat.present_count }}</td>
+                                        <td>
+                                            <div class="progress">
+                                                <div class="progress-bar bg-success" 
+                                                     role="progressbar" 
+                                                     style="width: {{ stat.attendance_percentage }}%"
+                                                     aria-valuenow="{{ stat.attendance_percentage }}" 
+                                                     aria-valuemin="0" 
+                                                     aria-valuemax="100">
+                                                    {{ "%.1f"|format(stat.attendance_percentage) }}%
+                                                </div>
+                                            </div>
+                                        </td>
+                                    {% endif %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col">
+            <a href="{{ url_for('attendance_menu') }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to Attendance Menu
+            </a>
+            <a href="{{ url_for('export_attendance', type=stats_type, format='csv') }}" class="btn btn-primary float-end">
+                <i class="bi bi-download me-2"></i>Export as CSV
+            </a>
+            <a href="{{ url_for('export_attendance', type=stats_type, format='pdf') }}" class="btn btn-danger float-end me-2">
+                <i class="bi bi-file-pdf me-2"></i>Export as PDF
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %} 

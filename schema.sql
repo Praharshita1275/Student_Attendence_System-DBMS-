@@ -63,15 +63,15 @@ CREATE TABLE Attendance_Records (
 -- Sample Data Insertion
 -- Insert Instructors
 INSERT INTO Instructors (instructor_id, first_name, last_name, email, phone, department) VALUES
-(1, 'John', 'Smith', 'john.smith@university.edu', '555-1234', 'Computer Science'),
+(1, 'Veerajyothi', 'B', 'john.smith@university.edu', '555-1234', 'Information Technology'),
 (2, 'Jane', 'Doe', 'jane.doe@university.edu', '555-5678', 'Mathematics'),
 (3, 'Michael', 'Johnson', 'michael.johnson@university.edu', '555-9012', 'Physics');
 
 -- Insert Students
 INSERT INTO Students (student_id, first_name, last_name, email, phone, enrollment_date) VALUES
-(1, 'Alice', 'Johnson', 'alice.j@student.edu', '555-1111', '2023-08-15'),
-(2, 'Bob', 'Williams', 'bob.w@student.edu', '555-2222', '2023-08-15'),
-(3, 'Charlie', 'Brown', 'charlie.b@student.edu', '555-3333', '2023-08-15'),
+(1, 'Praharshita', 'Gaali', 'Praharshiat05@gmail.com', '9347420659', '2023-08-15'),
+(2, 'Srichandana', 'Velagapudi', 'bob.w@student.edu', '555-2222', '2023-08-15'),
+(3, 'Akshatha', 'Ghandusala', 'charlie.b@student.edu', '555-3333', '2023-08-15'),
 (4, 'Diana', 'Garcia', 'diana.g@student.edu', '555-4444', '2023-08-15'),
 (5, 'Edward', 'Miller', 'edward.m@student.edu', '555-5555', '2023-08-15');
 
@@ -103,3 +103,54 @@ INSERT INTO Attendance_Records (record_id, student_id, course_id, date, status, 
 (5, 3, 2, '2023-09-05', 'Late', 'Arrived 15 minutes late', 2),
 (6, 4, 2, '2023-09-05', 'Present', NULL, 2),
 (7, 5, 2, '2023-09-05', 'Present', NULL, 2);
+
+-- View: Students with attendance below 75% threshold
+CREATE VIEW low_attendance_students AS
+SELECT 
+    s.student_id,
+    s.first_name,
+    s.last_name,
+    s.email,
+    c.course_id,
+    c.course_code,
+    c.course_name,
+    COUNT(CASE WHEN ar.status IN ('Present', 'Late') THEN 1 END) * 100.0 / 
+        COUNT(ar.record_id) AS attendance_percentage,
+    COUNT(ar.record_id) AS total_classes,
+    COUNT(CASE WHEN ar.status IN ('Present', 'Late') THEN 1 END) AS attended_classes
+FROM 
+    Students s
+JOIN 
+    Enrollments e ON s.student_id = e.student_id
+JOIN 
+    Courses c ON e.course_id = c.course_id
+LEFT JOIN 
+    Attendance_Records ar ON s.student_id = ar.student_id AND c.course_id = ar.course_id
+WHERE 
+    e.status = 'Active'
+GROUP BY 
+    s.student_id, c.course_id
+HAVING 
+    attendance_percentage < 75 OR attendance_percentage IS NULL;
+
+-- View: Student details with attendance statistics
+CREATE VIEW student_attendance_stats AS
+SELECT 
+    s.student_id,
+    s.first_name,
+    s.last_name,
+    s.email,
+    s.enrollment_date,
+    COUNT(DISTINCT e.course_id) AS enrolled_courses,
+    COUNT(ar.record_id) AS total_classes,
+    COUNT(CASE WHEN ar.status IN ('Present', 'Late') THEN 1 END) AS attended_classes,
+    COUNT(CASE WHEN ar.status IN ('Present', 'Late') THEN 1 END) * 100.0 / 
+        NULLIF(COUNT(ar.record_id), 0) AS overall_attendance_percentage
+FROM 
+    Students s
+LEFT JOIN 
+    Enrollments e ON s.student_id = e.student_id AND e.status = 'Active'
+LEFT JOIN 
+    Attendance_Records ar ON s.student_id = ar.student_id AND e.course_id = ar.course_id
+GROUP BY 
+    s.student_id;

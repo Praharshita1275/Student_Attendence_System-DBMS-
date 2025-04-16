@@ -46,7 +46,44 @@ def get_db_connection():
 # Route for home page
 @app.route('/')
 def index():
-    return render_template('index.html')
+    try:
+        conn = get_db_connection()
+        
+        # Get total number of students
+        total_students = conn.execute('SELECT COUNT(*) as count FROM Students').fetchone()['count']
+        
+        # Get number of active courses
+        active_courses = conn.execute('''
+            SELECT COUNT(*) as count 
+            FROM Courses 
+            WHERE end_date >= date('now')
+        ''').fetchone()['count']
+        
+        # Calculate today's attendance percentage
+        today_stats = conn.execute('''
+            SELECT 
+                COUNT(*) as total_records,
+                COUNT(CASE WHEN status IN ('Present', 'Late') THEN 1 END) as present_count
+            FROM Attendance_Records
+            WHERE date = date('now')
+        ''').fetchone()
+        
+        today_attendance = '0%'
+        if today_stats['total_records'] > 0:
+            attendance_percentage = (today_stats['present_count'] / today_stats['total_records']) * 100
+            today_attendance = f'{attendance_percentage:.1f}%'
+        
+        return render_template('index.html', 
+                             total_students=total_students,
+                             active_courses=active_courses,
+                             today_attendance=today_attendance)
+                             
+    except sqlite3.Error as e:
+        flash('Error loading dashboard statistics.', 'error')
+        return render_template('index.html')
+    finally:
+        if 'conn' in locals():
+            conn.close()
 
 # Routes for student management
 @app.route('/students')
@@ -112,7 +149,37 @@ def list_courses():
 # Routes for attendance management
 @app.route('/attendance')
 def attendance_menu():
-    return render_template('attendance/menu.html')
+    try:
+        conn = get_db_connection()
+        
+        # Get recent attendance records with statistics
+        recent_records = conn.execute('''
+            WITH DailyStats AS (
+                SELECT 
+                    ar.date,
+                    ar.course_id,
+                    c.course_name,
+                    COUNT(*) as total_students,
+                    COUNT(CASE WHEN ar.status IN ('Present', 'Late') THEN 1 END) as present_count,
+                    COUNT(CASE WHEN ar.status = 'Absent' THEN 1 END) as absent_count,
+                    ROUND(COUNT(CASE WHEN ar.status IN ('Present', 'Late') THEN 1 END) * 100.0 / COUNT(*), 1) as attendance_rate
+                FROM Attendance_Records ar
+                JOIN Courses c ON ar.course_id = c.course_id
+                GROUP BY ar.date, ar.course_id, c.course_name
+                ORDER BY ar.date DESC, c.course_name
+                LIMIT 10
+            )
+            SELECT * FROM DailyStats
+        ''').fetchall()
+        
+        return render_template('attendance/menu.html', recent_records=recent_records)
+        
+    except sqlite3.Error as e:
+        flash('Error loading attendance records.', 'error')
+        return render_template('attendance/menu.html', recent_records=[])
+    finally:
+        if 'conn' in locals():
+            conn.close()
 
 @app.route('/attendance/take', methods=['GET', 'POST'])
 def take_attendance():
@@ -362,6 +429,77 @@ def attendance_report():
     conn.close()
     
     return render_template('attendance/report_form.html', students=students, courses=courses)
+
+@app.route('/attendance/detail/<date>/<int:course_id>')
+def view_attendance_detail(date, course_id):
+    """View detailed attendance for a specific course on a specific date"""
+    try:
+        conn = get_db_connection()
+        
+        # Get course information
+        course = conn.execute('''
+            SELECT c.*, i.first_name || ' ' || i.last_name as instructor_name
+            FROM Courses c
+            JOIN Instructors i ON c.instructor_id = i.instructor_id
+            WHERE c.course_id = ?
+        ''', (course_id,)).fetchone()
+        
+        if not course:
+            flash('Course not found.', 'error')
+            return redirect(url_for('attendance_menu'))
+        
+        # Get all students enrolled in the course
+        enrolled_students = conn.execute('''
+            SELECT s.*, e.enrollment_id
+            FROM Students s
+            JOIN Enrollments e ON s.student_id = e.student_id
+            WHERE e.course_id = ? AND e.status = 'Active'
+            ORDER BY s.last_name, s.first_name
+        ''', (course_id,)).fetchall()
+        
+        # Get attendance records for the specified date
+        attendance_records = {}
+        records = conn.execute('''
+            SELECT ar.*, s.first_name, s.last_name
+            FROM Attendance_Records ar
+            JOIN Students s ON ar.student_id = s.student_id
+            WHERE ar.course_id = ? AND ar.date = ?
+        ''', (course_id, date)).fetchall()
+        
+        for record in records:
+            attendance_records[record['student_id']] = record
+        
+        # Calculate attendance statistics
+        total_students = len(enrolled_students)
+        present_count = sum(1 for record in attendance_records.values() 
+                          if record['status'] in ('Present', 'Late'))
+        absent_count = sum(1 for record in attendance_records.values() 
+                         if record['status'] == 'Absent')
+        late_count = sum(1 for record in attendance_records.values() 
+                        if record['status'] == 'Late')
+        excused_count = sum(1 for record in attendance_records.values() 
+                          if record['status'] == 'Excused')
+        
+        attendance_rate = (present_count / total_students * 100) if total_students > 0 else 0
+        
+        return render_template('attendance/detail.html',
+                              course=course,
+                              date=date,
+                              enrolled_students=enrolled_students,
+                              attendance_records=attendance_records,
+                              total_students=total_students,
+                              present_count=present_count,
+                              absent_count=absent_count,
+                              late_count=late_count,
+                              excused_count=excused_count,
+                              attendance_rate=attendance_rate)
+                              
+    except sqlite3.Error as e:
+        flash(f'Error loading attendance details: {str(e)}', 'error')
+        return redirect(url_for('attendance_menu'))
+    finally:
+        if 'conn' in locals():
+            conn.close()
 
 # Initialize the database when the app starts
 @app.before_first_request
